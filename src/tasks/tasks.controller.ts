@@ -1,7 +1,8 @@
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { TaskStatusValidationPipe } from './pipes/task-status-validation.pipe';
-import { Task, TaskStatus } from './task.model';
+import { TaskStatus } from './task-status.enum';
+import { Task } from './task.entity';
 import { TasksService } from './tasks.service';
 import {
   Body,
@@ -10,6 +11,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -22,38 +24,31 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @Get()
-  getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto): Task[] {
-    if (Object.keys(filterDto).length)
-      return this.tasksService.getTasksWithFilter(filterDto);
-    else return this.tasksService.getAllTasks();
+  getTasks(@Query(ValidationPipe) filterDto: GetTasksFilterDto) :Promise<Task[]> {
+    return this.tasksService.getTasks(filterDto);
   }
 
   @Get('/:id')
-  getTaskById(@Param('id') id: string): Task {
-    const found = this.tasksService.getTaskById(id);
-    if (!found) {
-      throw new NotFoundException('Task With ID not found');
-    }
-
-    return found;
+  getTaskById(@Param('id', ParseIntPipe) id: number): Promise<Task> {
+    return this.tasksService.getTaskById(id);
   }
 
   @Post()
   @UsePipes(ValidationPipe)
-  createTask(@Body() createTaskDto: CreateTaskDto): Task {
+  createTask(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
     return this.tasksService.createTask(createTaskDto);
   }
 
   @Patch('/:id/status')
   updateTaskStatus(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body('status', TaskStatusValidationPipe) status: TaskStatus,
-  ): Task {
+  ): Promise<Task> {
     return this.tasksService.updateTaskStatus(id, status);
   }
 
   @Delete('/:id')
-  deleteTask(@Param('id') id: string): void {
+  deleteTask(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.tasksService.deleteTask(id);
   }
 }
